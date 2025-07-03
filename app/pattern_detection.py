@@ -1,0 +1,1 @@
+# Harmonic pattern detection logic
