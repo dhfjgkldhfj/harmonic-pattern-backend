@@ -1,12 +1,16 @@
 from pydantic import BaseModel
 from typing import List
 
+class Point(BaseModel):
+    price: float
+    index: int
+
 class PatternPoints(BaseModel):
-    X: float
-    A: float
-    B: float
-    C: float
-    D: float
+    X: Point
+    A: Point
+    B: Point
+    C: Point
+    D: Point
 
 class FibonacciRatios(BaseModel):
     AB: float
