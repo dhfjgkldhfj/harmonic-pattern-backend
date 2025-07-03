@@ -18,6 +18,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+async def root():
+    return {"message": "API up and running. استخدم /patterns مع symbol و interval."}
+
 @app.get("/patterns")
 async def get_patterns(symbol: str = Query(...), interval: str = Query("1h")):
     patterns = await detect_patterns(symbol, interval)
