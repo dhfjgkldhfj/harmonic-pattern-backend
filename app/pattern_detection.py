@@ -1,35 +1,28 @@
-import pandas as pd
 from typing import List
-from app.models import HarmonicPattern, PatternPoints, FibonacciRatios
+from app.models import HarmonicPattern, PatternPoints, FibonacciRatios, Point
 from app.data_fetcher import fetch_candles
 
 async def detect_patterns(symbol: str, interval: str) -> List[HarmonicPattern]:
-    """
-    Function to detect harmonic patterns for given symbol and timeframe.
-    """
-    # جلب بيانات الشموع
-    df = await fetch_candles(symbol, interval)  # إذا fetch_candles ليست async، احذف await
+    df = await fetch_candles(symbol, interval)
 
-    # ----
-    # هنا منطق اكتشاف النقاط (X, A, B, C, D) وحساب نسب فيبوناتشي
-    # ----
+    # هنا تحتاج تطور المنطق الحقيقي لاكتشاف النقاط (X, A, B, C, D)
+    # هذا مثال ثابت للتوضيح فقط:
 
-    # بيانات مثال توضيحية:
     example_points = PatternPoints(
-        X={"price": 20000, "index": 0},
-        A={"price": 21000, "index": 1},
-        B={"price": 20500, "index": 2},
-        C={"price": 20800, "index": 3},
-        D={"price": 21200, "index": 4},
+        X=Point(price=df['close'].iloc[0], index=0),
+        A=Point(price=df['close'].iloc[1], index=1),
+        B=Point(price=df['close'].iloc[2], index=2),
+        C=Point(price=df['close'].iloc[3], index=3),
+        D=Point(price=df['close'].iloc[4], index=4),
     )
     example_ratios = FibonacciRatios(AB=0.618, BC=0.382, CD=1.272)
-    example_prz = [21100, 21300]
+    example_prz = [example_points.D.price * 0.99, example_points.D.price * 1.01]
 
     pattern = HarmonicPattern(
         pattern="Gartley",
         points=example_points,
         fibonacci_ratios=example_ratios,
-        prz=example_prz,
+        prz=example_prz
     )
 
     return [pattern]
