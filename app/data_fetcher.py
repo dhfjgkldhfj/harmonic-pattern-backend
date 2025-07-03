@@ -1,10 +1,8 @@
 import yfinance as yf
 import pandas as pd
+import anyio
 
 async def fetch_candles(symbol: str, interval: str) -> pd.DataFrame:
-    """
-    تحميل بيانات الشموع من Yahoo Finance
-    """
     yf_symbol = symbol.upper()
     if yf_symbol.endswith("USDT"):
         yf_symbol = yf_symbol[:-4] + "-USD"
@@ -14,15 +12,13 @@ async def fetch_candles(symbol: str, interval: str) -> pd.DataFrame:
         "5m": "5m",
         "15m": "15m",
         "1h": "60m",
-        "4h": "60m",  # لا دعم 4h في yfinance، نستخدم 60m كبديل
+        "4h": "60m",  # لا يدعم 4 ساعات بشكل مباشر في yfinance
         "1d": "1d",
         "1wk": "1wk",
         "1mo": "1mo",
     }
     yf_interval = interval_map.get(interval, "1d")
 
-    # تشغيل yfinance في Thread غير متزامن مع await
-    import anyio
     data = await anyio.to_thread.run_sync(
         lambda: yf.download(tickers=yf_symbol, period="7d", interval=yf_interval, progress=False)
     )
