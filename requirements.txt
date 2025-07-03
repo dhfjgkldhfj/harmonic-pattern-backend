@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
 httpx
-numpy
 pandas
+numpy
 scipy
