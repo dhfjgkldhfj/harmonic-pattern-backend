@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Dict, List, Optional
+from typing import List
 
 class PatternPoints(BaseModel):
     X: float
@@ -17,4 +17,4 @@ class HarmonicPattern(BaseModel):
     pattern: str
     points: PatternPoints
     fibonacci_ratios: FibonacciRatios
-    prz: List[float]  # Potential Reversal Zone range as list (start, end)
+    prz: List[float]
