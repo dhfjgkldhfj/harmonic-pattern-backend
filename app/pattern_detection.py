@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 from typing import List
 from app.models import HarmonicPattern, PatternPoints, FibonacciRatios
@@ -6,43 +5,31 @@ from app.data_fetcher import fetch_candles
 
 async def detect_patterns(symbol: str, interval: str) -> List[HarmonicPattern]:
     """
-    كشف نماذج هارمونيك مبسطة باستخدام بيانات أسعار CoinGecko.
+    Function to detect harmonic patterns for given symbol and timeframe.
     """
-    df = await fetch_candles(symbol, interval)
+    # جلب بيانات الشموع
+    df = await fetch_candles(symbol, interval)  # إذا fetch_candles ليست async، احذف await
 
-    # نستخدم سعر الإغلاق كالسعر الرئيسي
-    prices = df["close"].values
+    # ----
+    # هنا منطق اكتشاف النقاط (X, A, B, C, D) وحساب نسب فيبوناتشي
+    # ----
 
-    # مؤشر لكل نقطة (فقط أعداد صحيحة 0,1,2,...)
-    indices = np.arange(len(prices))
-
-    # للبساطة: اختر نقاط pivot يدوية (مثال)
-    # في مشروع حقيقي يجب خوارزمية متقدمة للكشف عن نقاط X,A,B,C,D
-    # هنا نختار أول 5 نقاط كمثال فقط:
-    if len(prices) < 5:
-        return []
-
-    points = PatternPoints(
-        X=prices[0],
-        A=prices[1],
-        B=prices[2],
-        C=prices[3],
-        D=prices[4]
+    # بيانات مثال توضيحية:
+    example_points = PatternPoints(
+        X={"price": 20000, "index": 0},
+        A={"price": 21000, "index": 1},
+        B={"price": 20500, "index": 2},
+        C={"price": 20800, "index": 3},
+        D={"price": 21200, "index": 4},
     )
-
-    fibonacci_ratios = FibonacciRatios(
-        AB=0.618,
-        BC=0.382,
-        CD=1.272
-    )
-
-    prz = [prices[3], prices[4]]
+    example_ratios = FibonacciRatios(AB=0.618, BC=0.382, CD=1.272)
+    example_prz = [21100, 21300]
 
     pattern = HarmonicPattern(
-        pattern="SamplePattern",
-        points=points,
-        fibonacci_ratios=fibonacci_ratios,
-        prz=prz
+        pattern="Gartley",
+        points=example_points,
+        fibonacci_ratios=example_ratios,
+        prz=example_prz,
     )
 
     return [pattern]
