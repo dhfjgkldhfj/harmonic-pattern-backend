@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import Dict, List, Union
 
 class Point(BaseModel):
     price: float
