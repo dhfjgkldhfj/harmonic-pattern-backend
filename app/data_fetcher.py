@@ -1,62 +1,46 @@
-import httpx
+import yfinance as yf
 import pandas as pd
-from datetime import datetime
 
-# خريطة بسيطة لتحويل رموز Binance إلى معرفات CoinGecko
-def symbol_to_coingecko_id(symbol: str) -> str:
-    mapping = {
-        "BTCUSDT": "bitcoin",
-        "ETHUSDT": "ethereum",
-        "BNBUSDT": "binancecoin",
-        # أضف رموز أخرى حسب الحاجة
-    }
-    return mapping.get(symbol.upper())
-
-# تحويل فترات Binance إلى فترات CoinGecko المناسبة
-INTERVAL_MAP = {
-    "1m": "minutely",
-    "5m": "minutely",
-    "15m": "minutely",
-    "1h": "hourly",
-    "4h": "hourly",
-    "1d": "daily",
-    "1w": "weekly",
-}
-
-async def fetch_candles(symbol: str, interval: str):
+async def fetch_candles(symbol: str, interval: str) -> pd.DataFrame:
     """
-    جلب بيانات أسعار من CoinGecko API.
-    ملاحظة: CoinGecko لا يوفر بيانات شموع كاملة، لذا هذه بيانات سعر إغلاق تقريبي.
+    جلب بيانات الشموع من Yahoo Finance.
+    symbol مثال: "BTCUSDT", "ETHUSDT", "AAPL"
+    interval: '1m', '5m', '15m', '1h', '4h', '1d', '1wk', '1mo'
     """
-    coin_id = symbol_to_coingecko_id(symbol)
-    if not coin_id:
-        raise ValueError(f"Unsupported symbol {symbol}")
 
-    vs_currency = "usd"
-    days = "30"  # آخر 30 يوم من البيانات
+    # تحويل رمز التداول ليناسب Yahoo Finance
+    yf_symbol = symbol.upper()
+    if yf_symbol.endswith("USDT"):
+        yf_symbol = yf_symbol[:-4] + "-USD"  # BTCUSDT -> BTC-USD
+    # يمكن إضافة تحويلات أخرى حسب الحاجة
 
-    url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart"
-    params = {
-        "vs_currency": vs_currency,
-        "days": days,
-        "interval": INTERVAL_MAP.get(interval, "daily"),
+    interval_map = {
+        "1m": "1m",
+        "5m": "5m",
+        "15m": "15m",
+        "1h": "60m",
+        "4h": "60m",  # لا يوجد دعم رسمي لـ 4 ساعات في yfinance - يمكن استخدام 60m
+        "1d": "1d",
+        "1wk": "1wk",
+        "1mo": "1mo",
     }
 
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url, params=params)
-        response.raise_for_status()
-        data = response.json()
+    yf_interval = interval_map.get(interval, "1d")
 
-    prices = data.get("prices", [])
+    # تنزيل البيانات لآخر 7 أيام كافتراض، يمكن تعديل الفترة حسب الحاجة
+    data = yf.download(tickers=yf_symbol, period="7d", interval=yf_interval, progress=False)
 
-    # تحويل الأسعار إلى DataFrame
-    df = pd.DataFrame(prices, columns=["timestamp", "price"])
-    df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
+    if data.empty:
+        raise ValueError(f"No data found for symbol {yf_symbol} with interval {yf_interval}")
 
-    # إعداد أعمدة Open, High, Low, Close كلها مساوية للسعر (تقريب)
-    df["open"] = df["price"]
-    df["high"] = df["price"]
-    df["low"] = df["price"]
-    df["close"] = df["price"]
+    data.reset_index(inplace=True)
+    data.rename(columns={
+        "Date": "timestamp",
+        "Open": "open",
+        "High": "high",
+        "Low": "low",
+        "Close": "close",
+        "Volume": "volume"
+    }, inplace=True)
 
-    return df
+    return data
