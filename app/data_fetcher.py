@@ -1,25 +1,62 @@
 import httpx
 import pandas as pd
-import asyncio
+from datetime import datetime
 
-async def fetch_candles(symbol: str, interval: str) -> pd.DataFrame:
+# خريطة بسيطة لتحويل رموز Binance إلى معرفات CoinGecko
+def symbol_to_coingecko_id(symbol: str) -> str:
+    mapping = {
+        "BTCUSDT": "bitcoin",
+        "ETHUSDT": "ethereum",
+        "BNBUSDT": "binancecoin",
+        # أضف رموز أخرى حسب الحاجة
+    }
+    return mapping.get(symbol.upper())
+
+# تحويل فترات Binance إلى فترات CoinGecko المناسبة
+INTERVAL_MAP = {
+    "1m": "minutely",
+    "5m": "minutely",
+    "15m": "minutely",
+    "1h": "hourly",
+    "4h": "hourly",
+    "1d": "daily",
+    "1w": "weekly",
+}
+
+async def fetch_candles(symbol: str, interval: str):
     """
-    Fetch candles from Binance API asynchronously.
+    جلب بيانات أسعار من CoinGecko API.
+    ملاحظة: CoinGecko لا يوفر بيانات شموع كاملة، لذا هذه بيانات سعر إغلاق تقريبي.
     """
-    url = f"https://api.binance.com/api/v3/klines"
-    params = {"symbol": symbol, "interval": interval, "limit": 500}
+    coin_id = symbol_to_coingecko_id(symbol)
+    if not coin_id:
+        raise ValueError(f"Unsupported symbol {symbol}")
+
+    vs_currency = "usd"
+    days = "30"  # آخر 30 يوم من البيانات
+
+    url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart"
+    params = {
+        "vs_currency": vs_currency,
+        "days": days,
+        "interval": INTERVAL_MAP.get(interval, "daily"),
+    }
+
     async with httpx.AsyncClient() as client:
         response = await client.get(url, params=params)
         response.raise_for_status()
         data = response.json()
 
-    df = pd.DataFrame(data, columns=[
-        "open_time", "open", "high", "low", "close", "volume",
-        "close_time", "quote_asset_volume", "number_of_trades",
-        "taker_buy_base_asset_volume", "taker_buy_quote_asset_volume", "ignore"
-    ])
+    prices = data.get("prices", [])
 
-    df["close"] = df["close"].astype(float)
-    df["index"] = range(len(df))
+    # تحويل الأسعار إلى DataFrame
+    df = pd.DataFrame(prices, columns=["timestamp", "price"])
+    df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
 
-    return df[["index", "close"]]
+    # إعداد أعمدة Open, High, Low, Close كلها مساوية للسعر (تقريب)
+    df["open"] = df["price"]
+    df["high"] = df["price"]
+    df["low"] = df["price"]
+    df["close"] = df["price"]
+
+    return df
